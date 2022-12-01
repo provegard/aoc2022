@@ -2,6 +2,7 @@ import strutils       # splitLines
 import std/sugar      # for collect
 import std/algorithm  # for sort
 import std/math       # for sum
+import std/sequtils   # for toSeq
 
 proc readLines(): seq[string] =
     return readFile("input").splitLines()
@@ -19,13 +20,11 @@ iterator calcCalories(): int =
         yield s
 
 proc part1() =
-    let cals = collect(newSeq):
-        for c in calcCalories(): c
+    let cals = toSeq(calcCalories())
     echo max(cals)
 
 proc part2() =
-    var cals = collect(newSeq):
-        for c in calcCalories(): c
+    var cals = toSeq(calcCalories())
     cals.sort(SortOrder.Descending)
     echo sum(cals[0 ..< 3])
 
