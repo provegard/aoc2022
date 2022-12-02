@@ -1,6 +1,4 @@
 import strutils       # splitLines 
-import std/sugar      # for collect
-import std/algorithm  # for sort
 import std/math       # for sum
 import std/sequtils   # for toSeq
 
