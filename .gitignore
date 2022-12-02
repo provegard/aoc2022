@@ -3,3 +3,5 @@ __pycache__/
 
 # assuming nim exe is named this
 main
+
+nimcache/
