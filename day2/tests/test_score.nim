@@ -4,4 +4,4 @@ import ../src/score
 suite "score":
 
     test "first":
-        check(calcRoundScore("A X") == 3)
+        check(calcRoundScore("A X") == 4)
