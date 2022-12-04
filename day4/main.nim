@@ -2,12 +2,13 @@ import std/sequtils
 import std/strutils
 import std/unittest
 import std/sets
+import sugar
 
 type IntTuple = (int, int)
 
 proc tuples(s: string): (IntTuple, IntTuple) =
-    let parts = s.split({',', '-'})
-    return ((parts[0].parseInt(), parts[1].parseInt()), (parts[2].parseInt(), parts[3].parseInt()))
+    let parts = s.split({',', '-'}).mapIt(parseInt(it))
+    return ((parts[0], parts[1]), (parts[2], parts[3]))
 
 proc fullyContains(a: IntTuple, b: IntTuple): bool =
     proc c(a: IntTuple, b: IntTuple): bool = a[0] <= b[0] and a[1] >= b[1]
@@ -17,13 +18,13 @@ proc overlap(a: IntTuple, b: IntTuple): bool =
     proc c(a: IntTuple, b: IntTuple): bool = a[0] >= b[0] and a[0] <= b[1]
     return c(a, b) or c(b, a)
 
-proc part1(file: string): int =
+proc part(file: string, alg: (IntTuple, IntTuple) -> bool): int =
     let ll = lines(file).toSeq().map(tuples)
-    return ll.filterIt(fullyContains(it[0], it[1])).len()
+    return ll.filterIt(alg(it[0], it[1])).len()
 
-proc part2(file: string): int =
-    let ll = lines(file).toSeq().map(tuples)
-    return ll.filterIt(overlap(it[0], it[1])).len()
+proc part1(file: string): int = part(file, fullyContains)
+
+proc part2(file: string): int = part(file, overlap)
 
 suite "day 4":
     test "tuples":
