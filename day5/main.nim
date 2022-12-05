@@ -31,9 +31,8 @@ method execute(self: MoveInstruction, stacks: Stacks) {.base.} =
         let item = src.crates.pop()
         tgt.crates.add(item)
 
-    var stacksCopy = stacks
     for i in 1..self.count:
-        exec1(stacksCopy)
+        exec1(stacks)
 
 method executeMulti(self: MoveInstruction, stacks: Stacks) {.base.} =
     var src = stacks[self.source - 1]
