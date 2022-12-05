@@ -31,36 +31,29 @@ method execute(self: MoveInstruction, stacks: Stacks) {.base.} =
         let item = src.crates.pop()
         tgt.crates.add(item)
 
-    var left = self.count
     var stacksCopy = stacks
-    while left > 0:
+    for i in 1..self.count:
         exec1(stacksCopy)
-        left -= 1
 
 method executeMulti(self: MoveInstruction, stacks: Stacks) {.base.} =
     var src = stacks[self.source - 1]
     var tgt = stacks[self.target - 1]
 
-    let fromIdx = src.crates.len() - self.count
-    let toIdxExcl = src.crates.len()
+    let slice = (src.crates.len() - self.count)..<src.crates.len()
 
-    let items = src.crates[fromIdx..<toIdxExcl]
+    let items = src.crates[slice]
     tgt.crates.add(items)
-    src.crates.delete(fromIdx..<toIdxExcl)
+    src.crates.delete(slice)
 
 proc top(stacks: Stacks): string =
-    result = newStringOfCap(stacks.len())
-    for s in stacks:
-        if s.crates.len() > 0:
-            result.add(s.crates[^1])
-    
+    return stacks.mapIt(if it.crates.len() > 0: $it.crates[^1] else: "").join()
 
 proc parseInstruction(ins: string): MoveInstruction =
     let parts = ins.split(' ')
     return MoveInstruction(count: parts[1].parseInt(), source: parts[3].parseInt(), target: parts[5].parseInt())
 
 proc parseStacks(lines: seq[string]): Stacks =
-    let count = (lines[0].len() + 1) div 4 # could also read last line...
+    let count = (lines[0].len() + 1) div 4 # could also read numbers line...
     var revLines = lines
     revLines.reverse()
     revLines.delete(0) # delete numbers
@@ -90,19 +83,16 @@ proc parseLines(ll: seq[string]): (Stacks, MoveInstructions) =
     
     return (parseStacks(stackLines), moveInstructions)
 
-proc part1(file: string): string =
+proc part(file: string, insExec: (ins: MoveInstruction, stacks: var Stacks) -> void): string =
     let (stacks, instructions) = parseLines(lines(file).toSeq())
     var stacksCopy = stacks
     for ins in instructions:
-        ins.execute(stacksCopy)
-    return top(stacksCopy)
-
-proc part2(file: string): string =
-    let (stacks, instructions) = parseLines(lines(file).toSeq())
-    var stacksCopy = stacks
-    for ins in instructions:
-        ins.executeMulti(stacksCopy)
+        insExec(ins, stacksCopy)
     return top(stacksCopy)    
+
+proc part1(file: string): string = part(file, (ins: MoveInstruction, stacks: var Stacks) => ins.execute(stacks))
+
+proc part2(file: string): string = part(file, (ins: MoveInstruction, stacks: var Stacks) => ins.executeMulti(stacks))
 
 suite "day 5":
     test "MoveInstruction.execute":
