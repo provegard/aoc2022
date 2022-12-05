@@ -37,6 +37,17 @@ method execute(self: MoveInstruction, stacks: Stacks) {.base.} =
         exec1(stacksCopy)
         left -= 1
 
+method executeMulti(self: MoveInstruction, stacks: Stacks) {.base.} =
+    var src = stacks[self.source - 1]
+    var tgt = stacks[self.target - 1]
+
+    let fromIdx = src.crates.len() - self.count
+    let toIdxExcl = src.crates.len()
+
+    let items = src.crates[fromIdx..<toIdxExcl]
+    tgt.crates.add(items)
+    src.crates.delete(fromIdx..<toIdxExcl)
+
 proc top(stacks: Stacks): string =
     result = newStringOfCap(stacks.len())
     for s in stacks:
@@ -86,6 +97,13 @@ proc part1(file: string): string =
         ins.execute(stacksCopy)
     return top(stacksCopy)
 
+proc part2(file: string): string =
+    let (stacks, instructions) = parseLines(lines(file).toSeq())
+    var stacksCopy = stacks
+    for ins in instructions:
+        ins.executeMulti(stacksCopy)
+    return top(stacksCopy)    
+
 suite "day 5":
     test "MoveInstruction.execute":
         let stack1 = Stack(crates: @['A'])
@@ -116,6 +134,16 @@ suite "day 5":
 
         check(stack1.crates == newSeq[char]())
         check(stack2.crates == @['B', 'A'])
+
+    test "MoveInstruction.execute many, multi":
+        let stack1 = Stack(crates: @['A', 'B', 'C'])
+        let stack2 = Stack(crates: newSeq[char]())
+
+        let ins = MoveInstruction(count: 2, source: 1, target: 2)
+        ins.executeMulti(@[stack1, stack2])
+
+        check(stack1.crates == @['A'])
+        check(stack2.crates == @['B', 'C'])
 
     test "MoveInstruction.execute 3":
         let stack1 = Stack(crates: @['X'])
@@ -159,3 +187,7 @@ suite "day 5":
     test "part1":
         check(part1("example") == "CMZ")
         check(part1("input") == "SBPQRSCDF")
+
+    test "part2":
+        check(part2("example") == "MCD")
+        check(part2("input") == "RGLVRCQSB")
