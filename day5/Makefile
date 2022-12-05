@@ -1,0 +1,2 @@
+test:
+	nim r *.nim
