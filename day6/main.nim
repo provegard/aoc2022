@@ -1,16 +1,12 @@
 import std/sequtils
-import std/strutils
 import std/unittest
 import std/sets
-import std/options
-import sugar
-import algorithm
+import ../utils/utils
 
 proc findMarkerPos(line: string, markerLen: int = 4): int =
-    for i in markerLen..line.len():
-        let lastOnes = line[(i-markerLen)..(i-1)]
-        if lastOnes.toHashSet().len() == markerLen:
-            return i
+    for w, pos in slidingWindow(line.items.toSeq(), markerLen):
+        if w.toHashSet().len() == markerLen:
+            return pos
     return -1
 
 proc part(file: string, markerLen: int): int =
