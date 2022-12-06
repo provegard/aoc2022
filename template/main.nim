@@ -1,8 +1,10 @@
-import std/sequtils
-import std/strutils
-import std/unittest
-import std/sets
-
+import sequtils
+import strutils
+import unittest
+import sets
+import options
+import sugar
+import algorithm
 
 suite "day X":
     test "test":
