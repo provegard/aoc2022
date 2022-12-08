@@ -21,6 +21,13 @@ proc move(c: Coord, dir: Directions): Coord =
         of Directions.dLeft:  (c[0], c[1] - 1) 
         of Directions.dRight: (c[0], c[1] + 1)
 
+iterator coordinates(lines: seq[string]): Coord =
+    let columns = lines[0].len()
+    var visible = initHashSet[Coord]()
+    for r in 0..<lines.len():
+        for c in 0..<columns:
+            yield (r, c)
+
 proc isValidCoord(c: Coord, lines: seq[string]): bool =
     return c[0] >= 0 and c[0] < lines.len() and c[1] >= 0 and c[1] < lines[0].len()
 
@@ -51,25 +58,15 @@ proc scenicScore(lines: seq[string], coord: Coord): int =
     return foldl(distances, a * b, 1)
 
 proc getVisible(lines: seq[string]): HashSet[Coord] =
-    let columns = lines[0].len()
     var visible = initHashSet[Coord]()
-    for r in 0..<lines.len():
-        for c in 0..<columns:
-            let coord = (r, c)
-            for d in directions:
-                if isVisible(lines, coord, d):
-                    visible.incl(coord)
+    for coord in coordinates(lines):
+        for d in directions:
+            if isVisible(lines, coord, d):
+                visible.incl(coord)
     return visible
 
 proc maxScenicScore(lines: seq[string]): int =
-    let columns = lines[0].len()
-    var mx = 0
-    for r in 0..<lines.len():
-        for c in 0..<columns:
-            let coord = (r, c)
-            let scenic = scenicScore(lines, coord)
-            mx = max(mx, scenic)
-    return mx
+    return coordinates(lines).toSeq().mapIt(scenicScore(lines, it)).max()
 
 proc part1(file: string): int =
     let ll = lines(file).toSeq()
@@ -106,4 +103,4 @@ suite "day 8":
 
     test "part2":
         check(part2("example") == 8)
-        check(part2("input") == 0)
+        check(part2("input") == 315495)
