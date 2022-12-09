@@ -25,14 +25,14 @@ proc parseMove(move: string): Move =
     return Move(direction: dir, steps: ($parts[1]).parseInt())
 
 proc areAdjacent(c1, c2: Coord): bool =
-    let xDiff = abs(c1[1] - c2[1])
-    let yDiff = abs(c1[0] - c2[0])
+    let xDiff = abs(c1.x - c2.x)
+    let yDiff = abs(c1.y - c2.y)
     return xDiff <= 1 and yDiff <= 1
 
 proc moveTowards(c, target: Coord): Coord =
-    let ym = sgn(target[0] - c[0])
-    let xm = sgn(target[1] - c[1])
-    return (c[0] + ym, c[1] + xm)
+    let ym = sgn(target.y - c.y)
+    let xm = sgn(target.x - c.x)
+    return Coord(y: c.y + ym, x: c.x + xm)
 
 proc executeMove(rope: Rope, m: Move, s: var HashSet[Coord]): Rope =
     var newKnots = rope.knots
@@ -45,11 +45,11 @@ proc executeMove(rope: Rope, m: Move, s: var HashSet[Coord]): Rope =
 
     return Rope(knots: newKnots)
 
-proc newRope(length: int): Rope = Rope(knots: (1..length).mapIt((0, 0)))
+proc newRope(length: int): Rope = Rope(knots: (1..length).mapIt(Coord(x: 0, y: 0)))
 
 proc part(file: string, ropeLength: int): int =
     let moves = lines(file).toSeq().mapIt(parseMove(it))
-    var s = @[(0, 0)].toHashSet()
+    var s = @[Coord(x: 0, y: 0)].toHashSet()
     let res = foldl(moves, executeMove(a, b, s), newRope(ropeLength))
     return s.len()
 
@@ -64,9 +64,9 @@ suite "day 9":
         check(parseMove("D 2") == Move(direction: Directions.dDown, steps: 2))
 
     test "moveTowards":
-        check(moveTowards((0, 0), (0, 2)) == (0, 1))
-        check(moveTowards((0, 0), (-2, 0)) == (-1, 0))
-        check(moveTowards((0, 0), (-2, 1)) == (-1, 1))
+        check(moveTowards(Coord(y: 0, x: 0), Coord(y: 0, x: 2)) == Coord(y: 0, x: 1))
+        check(moveTowards(Coord(y: 0, x: 0), Coord(y: -2, x: 0)) == Coord(y: -1, x: 0))
+        check(moveTowards(Coord(y: 0, x: 0), Coord(y: -2, x: 1)) == Coord(y: -1, x: 1))
 
     test "part1":
         check(part1("example") == 13)
