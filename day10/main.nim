@@ -42,10 +42,44 @@ proc signalStrength(instructions: seq[Instruction]): int =
             break
     return strength
 
+proc isSpriteAtPos(cpu: CPU, pos: int): bool = 
+    let rowPos = pos mod 40
+    return rowPos >= cpu.X - 1 and rowPos <= cpu.X + 1
+
+proc draw(instructions: seq[Instruction]): seq[char] =
+    var cpu = newCPU()
+    var screen = newSeq[char]()
+    for instr in instructions:
+        for i in 1..instr.cycles:
+            let pos = screen.len()
+            if isSpriteAtPos(cpu, pos):
+                screen.add('#')
+            else:
+                screen.add('.')
+
+        cpu = execute(cpu, instr)
+        if cpu.cycles >= 40 * 6:
+            break
+    return screen
+
+proc show(screen: seq[char]) =
+    var pos = 0
+    for ch in screen:
+        stdout.write(ch)
+        pos += 1
+        if pos mod 40 == 0:
+            stdout.write('\n')
+    flushFile(stdout)
+
 proc part1(file: string): int =
     let instructions = lines(file).toSeq().map(parseInstr)
     return signalStrength(instructions)
 
+proc part2(file: string): int =
+    let instructions = lines(file).toSeq().map(parseInstr)
+    let screen = draw(instructions)
+    show(screen)
+    return 0
 
 suite "day 10":
     test "parseInstr":
@@ -56,3 +90,8 @@ suite "day 10":
     test "part1":
         check(part1("example") == 13140)
         check(part1("input") == 14780)
+
+    test "part2":
+        check(part2("example") == 0)
+        echo "--"
+        check(part2("input") == 0)
