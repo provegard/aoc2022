@@ -28,19 +28,16 @@ proc parseInstr(instr: string): Instruction =
 
 proc execute(c: CPU, i: Instruction): CPU = CPU(X: c.X + i.dx, cycles: c.cycles + i.cycles)
 
-proc signalStrength(instructions: seq[Instruction]): int =
-    var cpu = newCPU()
-    var strength = 0
-    for instr in instructions:
-        # X won't change until after the instruction
-        let cyclesDuringThisInstr = (1..instr.cycles).mapIt(it + cpu.cycles)
-        let measureCycle = cyclesDuringThisInstr.filterIt((it - 20) mod 40 == 0)
-        if measureCycle.len() == 1:
-            strength += cpu.X * measureCycle[0]
-        cpu = execute(cpu, instr)
-        if cpu.cycles > 220:
-            break
-    return strength
+proc signalStrength(instructions: seq[Instruction], idx: int = 0, cpu: CPU = newCPU()): int =
+    let instr = instructions[idx]
+    let strength = (1..instr.cycles)
+        .mapIt(it + cpu.cycles)
+        .filterIt((it - 20) mod 40 == 0)
+        .foldl(a + (cpu.X * b), 0)
+    let newCPU = execute(cpu, instr)
+    if newCPU.cycles > 220:
+        return strength
+    return strength + signalStrength(instructions, idx + 1, newCPU)
 
 proc isSpriteAtPos(cpu: CPU, pos: int): bool = 
     let rowPos = pos mod 40
@@ -52,10 +49,7 @@ proc draw(instructions: seq[Instruction]): seq[char] =
     for instr in instructions:
         for i in 1..instr.cycles:
             let pos = screen.len()
-            if isSpriteAtPos(cpu, pos):
-                screen.add('#')
-            else:
-                screen.add('.')
+            screen.add(if isSpriteAtPos(cpu, pos): '#' else: '.')
 
         cpu = execute(cpu, instr)
         if cpu.cycles >= 40 * 6:
