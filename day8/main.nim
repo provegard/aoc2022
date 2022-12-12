@@ -7,12 +7,6 @@ import sugar
 import algorithm
 import ../utils/move
 
-iterator coordinates(lines: seq[string]): Coord =
-    let columns = lines[0].len()
-    for r in 0..<lines.len():
-        for c in 0..<columns:
-            yield Coord(y: r, x: c)
-
 proc isValidCoord(c: Coord, lines: seq[string]): bool =
     return c.y >= 0 and c.y < lines.len() and c.x >= 0 and c.x < lines[0].len()
 
