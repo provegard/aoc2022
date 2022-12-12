@@ -1,2 +1,2 @@
 test:
-	nim r *.nim
+	nim -d:release r *.nim
