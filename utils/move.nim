@@ -20,3 +20,6 @@ iterator coordinates*(lines: seq[string]): Coord =
     for r in 0..<lines.len():
         for c in 0..<columns:
             yield Coord(y: r, x: c)
+
+proc manhattan*(a, b: Coord): int =
+    return abs(a.x - b.x) + abs(a.y - b.y)
