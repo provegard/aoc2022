@@ -2,13 +2,10 @@ import sequtils
 import strutils
 import unittest
 import sets
-import options except flatMap
-import sugar
 import algorithm
 import ../utils/utils
 import ../utils/move
 import std/nre except toSeq
-import strformat
 
 type
     Report = ref object
@@ -51,16 +48,6 @@ proc part1(file: string, y: int): int =
 
 proc tuningFreq(c: Coord): int = c.x * 4000000 + c.y
 
-proc draw(xr: (int, int), yr: (int, int), s: HashSet[Coord]) =
-    for y in yr[0]..yr[1]:
-        for x in xr[0]..xr[1]:
-            if s.contains(Coord(x: x, y: y)):
-                stdout.write('#')
-            else:
-                stdout.write('.')
-        stdout.write('\n')
-    flushFile(stdout)
-
 type Range = (int, int)
 
 proc mergeRanges(a, b: Range): Range = (min(a[0], b[0]), max(a[1], b[1]))
@@ -74,8 +61,6 @@ type
 proc part2(file: string, xMax, yMax: int): int =
     let ll = lines(file).toSeq
     let reports = ll.map(parseLine)
-
-    var ys = newSeq[Ranges](1 + yMax)
 
     for y in 0..yMax:
         # for each sensor, figure out its x coverage at this y
