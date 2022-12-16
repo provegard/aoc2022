@@ -105,8 +105,8 @@ proc next(tab: Table[string, Valve], timeLeft: int, currentId: string, cache: va
         let openedValve = valve.openValve(newTimeLeft) # makes a copy
         tableCopy[openedValve.id] = openedValve
 
-    # consider closed valves that can be opened, except the one we came from
-    let targets = tab.values.toSeq.filterIt(not it.open and it.flowRate > 0 and it.id != currentId)
+    # consider closed valves that can be opened
+    let targets = tableCopy.values.toSeq.filterIt(not it.open and it.flowRate > 0)
 
     if newTimeLeft == 0 or targets.len() == 0:
         return sumPressures(tableCopy)
