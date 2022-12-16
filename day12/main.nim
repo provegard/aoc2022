@@ -2,6 +2,7 @@ import sequtils
 import unittest
 import sets
 import ../utils/move
+import ../utils/utils
 import tables
 
 let directions = @[Directions.dLeft, Directions.dUp, Directions.dRight, Directions.dDown]
@@ -29,13 +30,6 @@ proc parse(ll: seq[string]): Grid =
             elevation = 'z'
         cells[coord] = elevation
     return Grid(cells: cells, start: s, endd: e)
-
-proc minByIdx[T, U](s: seq[T], f: proc (a: T, b: U): int, arg: U): int =
-    var cur = 0
-    for i in 1..<s.len():
-        if f(s[i], arg) < f(s[cur], arg):
-            cur = i
-    return cur
 
 proc neighbors(grid: Grid, coord: Coord, validNeighbor: proc (g: Grid, f: Coord, t: Coord): bool): seq[Coord] =
     return directions.mapIt(move(coord, it)).filterIt(isGridPos(grid, it) and validNeighbor(grid, coord, it))
