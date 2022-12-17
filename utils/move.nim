@@ -23,3 +23,5 @@ iterator coordinates*(lines: seq[string]): Coord =
 
 proc manhattan*(a, b: Coord): int =
     return abs(a.x - b.x) + abs(a.y - b.y)
+
+proc addCoords*(a, b: Coord): Coord = Coord(x: a.x + b.x, y: a.y + b.y)
