@@ -82,7 +82,7 @@ proc findPath(tab: Table[string, Valve], start: string, target: string): seq[str
 proc sumPressures(tab: Table[string, Valve]): int = tab.values.toSeq.mapIt(it.totalPressure).sum()
 
 
-proc next(tab: Table[string, Valve], timeLeft: int, currentId: string, cache: var Table[string, int], distCache: var Table[(string, string), int]): int =
+proc next(tab: Table[string, Valve], timeLeft: int, currentId: string, cache: var Table[string, int], pathCache: var Table[(string, string), seq[string]]): int =
     let valve = tab[currentId]
 
     let cacheKeyParts = concat(tab.values.toSeq.filterIt(it.open).mapIt(it.id), @[currentId, $timeLeft])
@@ -115,17 +115,18 @@ proc next(tab: Table[string, Valve], timeLeft: int, currentId: string, cache: va
     for target in targets:
         let pathKey = (currentId, target.id)
         # find path to target
-        let pathLen = if distCache.contains(pathKey):
-            distCache[pathKey]
+        let path = if pathCache.contains(pathKey):
+            pathCache[pathKey]
         else:
-            findPath(tab, currentId, target.id).len()
-        distCache[pathKey] = pathLen
+            findPath(tab, currentId, target.id)
+        pathCache[pathKey] = path
+        let pathLen = path.len()
         if pathLen == 0:
             # no path to target
             continue
 
         let moveTime = pathLen - 1 # path includes start, so subtract 1
-        let res = next(tableCopy, newTimeLeft - moveTime, target.id, cache, distCache)
+        let res = next(tableCopy, newTimeLeft - moveTime, target.id, cache, pathCache)
         results.add(res)
 
     assert results.len() > 0
@@ -138,8 +139,8 @@ proc next(tab: Table[string, Valve], timeLeft: int, currentId: string, cache: va
 
 proc naive(tab: Table[string, Valve]): int =
     var cache = initTable[string, int]()
-    var distCache = initTable[(string, string), int]()
-    return next(tab, 30, "AA", cache, distCache)
+    var pathCache = initTable[(string, string), seq[string]]()
+    return next(tab, 30, "AA", cache, pathCache)
 
 proc part1(file: string): int =
     let lookup = createLookup(lines(file).toSeq.map(parseLine))
