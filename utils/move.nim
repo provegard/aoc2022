@@ -8,6 +8,11 @@ type Coord* = object
     x*: int
     y*: int
 
+type Coord3D* = object
+    x*: int
+    y*: int
+    z*: int
+
 proc move*(c: Coord, dir: Directions): Coord =
     return case dir:
         of Directions.dUp:    Coord(x: c.x, y: c.y - 1)
@@ -25,3 +30,6 @@ proc manhattan*(a, b: Coord): int =
     return abs(a.x - b.x) + abs(a.y - b.y)
 
 proc addCoords*(a, b: Coord): Coord = Coord(x: a.x + b.x, y: a.y + b.y)
+
+proc manhattan*(a, b: Coord3D): int =
+    return abs(a.x - b.x) + abs(a.y - b.y) + abs(a.z - b.z)
