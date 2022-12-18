@@ -2,12 +2,10 @@ import sequtils
 import strutils
 import unittest
 import sets
-import options
-import sugar
-import algorithm
 import strformat
 import math
 import ../utils/move
+import hashes
 
 proc parseLine(line: string): Coord3D =
     let parts = line.split(",").map(parseInt)
@@ -23,19 +21,22 @@ type
 proc `$`(c: Cube): string =
     return &"[(x: {c.pos.x}, y: {c.pos.y}, z: {c.pos.z}), adjacent = {c.adjacent.len()}]"
 
+proc `==`(a, b: Cube): bool = a.pos == b.pos
+proc hash(c: Cube): Hash = hash(c.pos)
+
 proc newCube(pos: Coord3D): Cube = Cube(pos: pos, adjacent: newSeq[Cube]())
 
 proc cubeGroup(c: Cube): seq[Cube] =
-    var all = newSeq[Cube]()
+    var all = initHashSet[Cube]()
     var list = @[c]
     while list.len() > 0:
         let next = list.pop()
-        all.add(next)
+        all.incl(next)
         for a in next.adjacent:
             if all.contains(a) or list.contains(a):
                 continue
             list.add(a)
-    return all
+    return all.items.toSeq
 
 proc connectCubes(cubes: var seq[Cube]) =
     for i in 0..<cubes.len():
@@ -46,20 +47,24 @@ proc connectCubes(cubes: var seq[Cube]) =
                 c1.adjacent.add(c2)
                 c2.adjacent.add(c1)
 
-proc countArea(cubes: seq[Cube]): int =
-    var allCubes = cubes
-    connectCubes(allCubes)
-
-    var area = 0
+iterator droplets(cubes: seq[Cube]): seq[Cube] =
+    var allCubes = cubes.toHashSet()
     while allCubes.len() > 0:
         let c = allCubes.pop()
         let group = cubeGroup(c)
 
         for c2 in group:
-            let idx = allCubes.find(c2)
-            if idx >= 0:
-                allCubes.delete(idx)
-            area += 6 - c2.adjacent.len()
+            allCubes.excl(c2)
+
+        yield group
+
+proc countArea(cubes: seq[Cube]): int =
+    var allCubes = cubes
+    connectCubes(allCubes)
+
+    var area = 0
+    for droplet in droplets(allCubes):
+        area += droplet.mapIt(6 - it.adjacent.len()).sum()
 
     return area
 
