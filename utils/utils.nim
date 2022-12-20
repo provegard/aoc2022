@@ -23,3 +23,9 @@ proc minByIdx*[T, U](s: seq[T], f: proc (a: T, b: U): int, arg: U): int =
         if f(s[i], arg) < f(s[cur], arg):
             cur = i
     return cur
+
+proc findIndex*[T](s: seq[T], f: proc (x: T): bool, start: int = 0): int =
+    for idx in start..<s.len():
+        if f(s[idx]):
+            return idx
+    return -1
