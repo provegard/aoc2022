@@ -176,8 +176,80 @@ proc part1(file: string): int =
             return -cave.highestY
     return 0
 
+proc part2(file: string): uint64 =
+    let line = lines(file).toSeq()[0]
+    var jets = newJets(line)
+    var cave = newCave(7)
+    var rocks = newRocks()
+
+    var heights = newSeq[int]()
+    for s in fall(cave, jets, rocks):
+        heights.add(-cave.highestY)
+        if s == 10000:
+            break
+
+    proc heightDiffsAt(idx, len: int): seq[int] =
+        let slice = heights[idx..<(idx+len)]
+        return slice.zip(slice[1..^1]).mapIt(it[1] - it[0])
+
+    # Find recurring pattern
+    let testLen = 20
+    for start in 0..5000:
+        var highestLen = 0
+        var highestIdx = 0
+        for len in testLen..testLen:
+            let heightDiffs = heightDiffsAt(start, len)
+
+            for idx in (start+len+1)..<(heights.len() - len):
+                let otherHeightDiffs = heightDiffsAt(idx, len)
+
+                if heightDiffs == otherHeightDiffs:
+                    if len > highestLen:
+                        highestLen = len
+                        highestIdx = idx
+
+        if highestLen > 0:
+            let diff = highestIdx - (start + highestLen)
+            #echo &"match at start={start} for len={highestLen} at idx={highestIdx} => diff = {diff}"
+
+            # we found two matching sequences A1 and A2, now test if we have A3 where we expect i
+            let d1 = heightDiffsAt(highestIdx, highestLen)
+            let d2 = heightDiffsAt(highestIdx + highestLen + diff, highestLen)
+
+            if d1 == d2:
+                #echo &"pattern of {highestLen} repeats itself at index {start} + N * ({highestLen} + {diff})"
+                let a = start
+                let b = highestLen + diff
+                
+                proc calcIndexForPattern(n: int): int = a + b * n
+                proc calcHeightAtPattern(n: int): uint64 =  uint64(heights[calcIndexForPattern(n)])
+
+                let heightAtPattern0 = calcHeightAtPattern(0)
+                let heightDiffBetweenN = calcHeightAtPattern(1) - heightAtPattern0
+
+                proc calcHeight(rocks: uint64): uint64 =
+                    # with (rocks) fallen rocks, the last one is at index (rocks - 1)
+                    let soughtIdx = rocks - 1'u64
+
+                    # figure out n = the number of height diffs
+                    # and remainder, the number of _heights_ after an even n-multiple
+                    let x2 = soughtIdx - uint64(start)
+                    let n = x2 div uint64(b)
+                    let remainder = x2 mod uint64(b)
+
+                    let remDiff = uint64(heights[calcIndexForPattern(0) + int(remainder)]) - heightAtPattern0
+
+                    return heightAtPattern0 + heightDiffBetweenN * n + remDiff
+
+                return calcHeight(1000000000000'u64)
+
+    return 0'u64
 
 suite "day 17":
-    test "test":
+    test "part 1":
         check(part1("example") == 3068)
         check(part1("input") == 3048)
+
+    test "part 2":
+        check(part2("example") == 1514285714288'u64)
+        check(part2("input") == 1504093567249'u64)
