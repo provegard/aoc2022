@@ -1,10 +1,7 @@
 import sequtils
 import strutils
 import unittest
-import sets
 import options
-import sugar
-import algorithm
 import strformat
 import math
 import nre except toSeq
@@ -36,13 +33,6 @@ type
             op: Operation
         of nkValue:
             value: int64
-    ValueKind = enum vkValue, vkExpression
-    ValueWrapper = object
-        case kind: ValueKind:
-        of vkValue:
-            value: int64
-        of vkExpression:
-            expression: string
 
 proc `==`(a, b: Node): bool =
     if a.kind != b.kind:
@@ -50,11 +40,6 @@ proc `==`(a, b: Node): bool =
     if a.kind == nkValue:
         return a.value == b.value
     return a.op == b.op
-
-proc `$`(w: ValueWrapper): string =
-    return case w.kind
-        of vkValue: $w.value
-        of vkExpression: w.expression
 
 proc `==`(a, b: Expression): bool =
     if a.kind != b.kind:
@@ -266,7 +251,6 @@ proc part1(file: string): int64 = calculate(parseFile(file))
 
 proc part2(file: string): int64 =
     var nodes = parseFile(file)
-    let humnIndex = findIndex(nodes, proc (n: Node): bool = n.id == "humn")
     let rootIndex = findIndex(nodes, proc (n: Node): bool = n.id == "root")
     nodes[rootIndex].op.operator = "="
     let exp = buildExpression2(nodes)
