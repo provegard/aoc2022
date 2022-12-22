@@ -29,3 +29,14 @@ proc findIndex*[T](s: seq[T], f: proc (x: T): bool, start: int = 0): int =
         if f(s[idx]):
             return idx
     return -1
+
+iterator splitByDelimiter*[T](s: seq[T], f: proc (x: T): bool): seq[string] =
+    var current = newSeq[T]()
+    for item in s:
+        if f(item):
+            yield current
+            current.setLen(0)
+        else:
+            current.add(item)
+    if current.len() > 0:
+        yield current
