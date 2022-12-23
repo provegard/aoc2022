@@ -83,7 +83,7 @@ proc printWorld(world: World) =
     flushFile(stdout)
 
 
-proc moveAround(world: var World, maxRounds: int, debug: bool = false) =
+proc moveAround(world: var World, maxRounds: int, debug: bool = false): int =
     if debug:
         echo ""
         echo "Initial state"
@@ -93,12 +93,13 @@ proc moveAround(world: var World, maxRounds: int, debug: bool = false) =
     var rounds = 0
     while true:
         let didMove = oneRound(world, considerationStartIndex)
+        considerationStartIndex += 1
+        rounds += 1
+
         if not didMove:
             if debug:
                 echo "did not move"
             break
-        considerationStartIndex += 1
-        rounds += 1
 
         if debug:
             echo ""
@@ -109,6 +110,7 @@ proc moveAround(world: var World, maxRounds: int, debug: bool = false) =
             if debug:
                 echo "reached max rounds"
             break
+    return rounds
 
 proc parseFile(file: string): World =
     var world = initHashSet[Coord]()
@@ -120,7 +122,7 @@ proc parseFile(file: string): World =
 
 proc part1(file: string): int =
     var world = parseFile(file)
-    moveAround(world, 10)
+    discard moveAround(world, 10)
     let minX = world.items.toSeq.mapIt(it.x).min()
     let maxX = world.items.toSeq.mapIt(it.x).max()
     let minY = world.items.toSeq.mapIt(it.y).min()
@@ -128,7 +130,15 @@ proc part1(file: string): int =
     let tiles = (maxX - minX + 1) * (maxY - minY + 1)
     return tiles - world.len()
 
+proc part2(file: string): int =
+    var world = parseFile(file)
+    return moveAround(world, high(int))
+
 suite "day 23":
-    test "test":
+    test "part 1":
         check(part1("example") == 110)
         check(part1("input") == 4045)
+
+    test "part 2":
+        check(part2("example") == 20)
+        check(part2("input") == 963)
