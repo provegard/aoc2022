@@ -4,6 +4,7 @@ import sets
 import strformat
 import ../utils/move
 import tables
+import times
 
 type
     CompassDirection = enum cdNorth, cdNorthEast, cdEast, cdSouthEast, cdSouth, cdSouthWest, cdWest, cdNorthWest
@@ -127,7 +128,12 @@ proc part1(file: string): int =
 
 proc part2(file: string): int =
     var world = parseFile(file)
-    return moveAround(world, high(int))
+
+    let before = cpuTime()
+    let ret = moveAround(world, high(int))
+    let elapsed = int(1000 * (cpuTime() - before))
+    echo &"file {file} took {elapsed} ms"
+    return ret
 
 suite "day 23":
     test "part 1":
