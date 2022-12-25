@@ -127,15 +127,15 @@ iterator allBlizzards(v: Valley, b: Blizzards2): Blizzards2 =
     for i in 1..<count:
         yield blizzardsAt(v, b, i)
 
-iterator findPath(v: Valley, b: Blizzards2): int =
+iterator findPath(v: Valley, b: Blizzards2, start: Coord, goal: Coord, startMinutes: int): int =
     let bb = allBlizzards(v, b).toSeq
     let bbLen = bb.len()
 
-    var queue = @[(v.startPos, 0)].toDeque
+    var queue = @[(start, startMinutes)].toDeque
     var visited = initHashSet[(Coord, int)]()
     while queue.len() > 0:
         let (c, mn) = queue.popFirst
-        if c == v.goalPos:
+        if c == goal:
             yield mn
 
         let actualMin = mn mod bbLen
@@ -157,7 +157,7 @@ iterator findPath(v: Valley, b: Blizzards2): int =
             queue.addLast((c, nextMinute))
 
         if nn.len() > 0:
-            let gidx = nn.findIndex(proc (n: Coord): bool = n == v.goalPos)
+            let gidx = nn.findIndex(proc (n: Coord): bool = n == goal)
             if gIdx >= 0:
                 # found goal, don't bother checking other neighbors
                 yield nextMinute
@@ -167,9 +167,17 @@ iterator findPath(v: Valley, b: Blizzards2): int =
      
 proc part1(file: string): int =
     let (valley, blizzards) = parseValley(file)
-    for mn in findPath(valley, blizzards):
+    for mn in findPath(valley, blizzards, valley.startPos, valley.goalPos, 0):
         # assume the first one is the best...
         return mn
+    return -1
+
+proc part2(file: string): int =
+    let (valley, blizzards) = parseValley(file)
+    for mn in findPath(valley, blizzards, valley.startPos, valley.goalPos, 0):
+        for mn2 in findPath(valley, blizzards, valley.goalPos, valley.startPos, mn):
+            for mn3 in findPath(valley, blizzards, valley.startPos, valley.goalPos, mn2):
+                return mn3
     return -1
 
 suite "day 24":
@@ -210,3 +218,7 @@ suite "day 24":
     test "part 1":
        check(part1("example") == 18)
        check(part1("input") == 247)
+
+    test "part 2":
+        check(part2("example") == 54)
+        check(part2("input") == 728)
