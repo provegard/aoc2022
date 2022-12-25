@@ -24,13 +24,27 @@ proc minByIdx*[T, U](s: seq[T], f: proc (a: T, b: U): int, arg: U): int =
             cur = i
     return cur
 
+proc maxByIdx*[T, U](s: seq[T], f: proc (a: T, b: U): int, arg: U): int =
+    var cur = 0
+    for i in 1..<s.len():
+        if f(s[i], arg) > f(s[cur], arg):
+            cur = i
+    return cur
+
+proc maxByIdx*[T](s: seq[T], f: proc (a: T): int): int =
+    var cur = 0
+    for i in 1..<s.len():
+        if f(s[i]) > f(s[cur]):
+            cur = i
+    return cur
+
 proc findIndex*[T](s: seq[T], f: proc (x: T): bool, start: int = 0): int =
     for idx in start..<s.len():
         if f(s[idx]):
             return idx
     return -1
 
-iterator splitByDelimiter*[T](s: seq[T], f: proc (x: T): bool): seq[string] =
+iterator splitByDelimiter*[T](s: seq[T], f: proc (x: T): bool): seq[T] =
     var current = newSeq[T]()
     for item in s:
         if f(item):
@@ -40,3 +54,9 @@ iterator splitByDelimiter*[T](s: seq[T], f: proc (x: T): bool): seq[string] =
             current.add(item)
     if current.len() > 0:
         yield current
+
+iterator takeWhile*[T](s: seq[T], f: proc (x: T): bool): T =
+    for x in s:
+        if not f(x):
+            break
+        yield x
