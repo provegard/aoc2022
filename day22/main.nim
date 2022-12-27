@@ -3,10 +3,13 @@ import unittest
 import ../utils/move
 import ../utils/utils
 import tables
+import sets
+import math
 
 type
     TileType = enum ttOpen, ttWall
     Board = Table[Coord, TileType]
+    FaceMap = Table[Coord, int]
     Path = seq[int]
 
 let Left = -1
@@ -31,7 +34,7 @@ proc findStart(b: Board): Coord =
     let minX = b.keys.toSeq.filterIt(it.y == 0).mapIt(it.x).min()
     return Coord(x: minX, y: 0)
 
-proc parseFile(file: string): (Board, Path) =
+proc parseFile(file: string): (Board, Path, FaceMap) =
     var board = initTable[Coord, TileType]()
     var parts = lines(file).toSeq.splitByDelimiter(proc (l: string): bool = l == "").toSeq
     for rowIndex, line in parts[0]:
@@ -44,7 +47,29 @@ proc parseFile(file: string): (Board, Path) =
     
     let path = parsePath(parts[1][0]).toSeq
 
-    return (board, path)
+    var faceMap = initTable[Coord, int]()
+    let tileCount = board.len()
+    let side = int(sqrt(tileCount / 6))
+
+    var counts = initCountTable[int]()
+    let minY = board.keys.toSeq.mapIt(it.y).min()
+    let maxY = board.keys.toSeq.mapIt(it.y).max()
+    let minX = board.keys.toSeq.mapIt(it.x).min()
+    let maxX = board.keys.toSeq.mapIt(it.x).max()
+    for y in minY..maxY:
+        for x in minX..maxX:
+            let c = Coord(x: x, y: y)
+            if board.contains(c) and not faceMap.contains(c):
+                let nextFace = (1..6).toSeq.findIndex(proc (i: int): bool = counts[i] == 0) + 1
+                assert nextFace > 0
+                # this is the upper-left tile
+                for yy in y..<(y+side):
+                    for xx in x..<(x+side):
+                        let cc = Coord(x: xx, y: yy)
+                        faceMap[cc] = nextFace
+                counts.inc(nextFace)
+
+    return (board, path, faceMap)
 
 proc changeDirection(d: Directions, how: int): Directions =
     if d == Directions.dUp:
@@ -81,7 +106,7 @@ proc facingValue(dir: Directions): int =
         of Directions.dLeft: 2
         of Directions.dUp: 3
 
-proc move(b: Board, path: Path): (Coord, Directions) =
+proc move(b: Board, path: Path, wrapFn: proc (b: Board, c: Coord, dir: Directions): Coord): (Coord, Directions) =
     var current = findStart(b)
     var dir = Directions.dRight
     for instr in path:
@@ -92,7 +117,7 @@ proc move(b: Board, path: Path): (Coord, Directions) =
                 var next = move(current, dir)
                 if isOutside(b, next):
                     # wrap
-                    next = wrap(b, next, dir)
+                    next = wrapFn(b, next, dir)
                 if isWall(b, next):
                     # stay
                     break
@@ -101,8 +126,8 @@ proc move(b: Board, path: Path): (Coord, Directions) =
     return (current, dir)
 
 proc part1(file: string): int =
-    let (board, path) = parseFile(file)
-    let (pos, dir) = move(board, path)
+    let (board, path, _) = parseFile(file)
+    let (pos, dir) = move(board, path, wrap)
 
     let row = 1 + pos.y
     let col = 1 + pos.x
@@ -122,3 +147,16 @@ suite "day 22":
     test "part 1":
         check(part1("example") == 6032)
         check(part1("input") == 64256)
+
+    test "face map":
+        let (_, _, faceMap) = parseFile("example")
+
+        let uniqueValues = faceMap.values.toSeq.toHashSet()
+        check(uniqueValues.len() == 6)
+
+        check(faceMap[Coord(x: 8, y: 0)] == 1)
+        check(faceMap[Coord(x: 0, y: 4)] == 2)
+        check(faceMap[Coord(x: 4, y: 4)] == 3)
+        check(faceMap[Coord(x: 8, y: 4)] == 4)
+        check(faceMap[Coord(x: 8, y: 8)] == 5)
+        check(faceMap[Coord(x: 12, y: 8)] == 6)
