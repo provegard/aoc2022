@@ -13,12 +13,12 @@ type Coord3D* = object
     y*: int
     z*: int
 
-proc move*(c: Coord, dir: Directions): Coord =
+proc move*(c: Coord, dir: Directions, steps: int = 1): Coord =
     return case dir:
-        of Directions.dUp:    Coord(x: c.x, y: c.y - 1)
-        of Directions.dDown:  Coord(x: c.x, y: c.y + 1)
-        of Directions.dLeft:  Coord(x: c.x - 1, y: c.y)
-        of Directions.dRight: Coord(x: c.x + 1, y: c.y)
+        of Directions.dUp:    Coord(x: c.x, y: c.y - steps)
+        of Directions.dDown:  Coord(x: c.x, y: c.y + steps)
+        of Directions.dLeft:  Coord(x: c.x - steps, y: c.y)
+        of Directions.dRight: Coord(x: c.x + steps, y: c.y)
 
 iterator coordinates*(lines: seq[string]): Coord =
     let columns = lines[0].len()
@@ -30,6 +30,8 @@ proc manhattan*(a, b: Coord): int =
     return abs(a.x - b.x) + abs(a.y - b.y)
 
 proc addCoords*(a, b: Coord): Coord = Coord(x: a.x + b.x, y: a.y + b.y)
+proc `+`*(a, b: Coord): Coord = addCoords(a, b)
+proc `-`*(a, b: Coord): Coord = Coord(x: a.x - b.x, y: a.y - b.y)
 
 proc manhattan*(a, b: Coord3D): int =
     return abs(a.x - b.x) + abs(a.y - b.y) + abs(a.z - b.z)

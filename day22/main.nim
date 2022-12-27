@@ -5,12 +5,14 @@ import ../utils/utils
 import tables
 import sets
 import math
+import strformat
 
 type
     TileType = enum ttOpen, ttWall
     Board = Table[Coord, TileType]
     FaceMap = Table[Coord, int]
     Path = seq[int]
+    WrapFn = proc (b: Board, current: Coord, next: Coord, dir: Directions): (Coord, Directions)
 
 let Left = -1
 let Right = -2
@@ -34,7 +36,7 @@ proc findStart(b: Board): Coord =
     let minX = b.keys.toSeq.filterIt(it.y == 0).mapIt(it.x).min()
     return Coord(x: minX, y: 0)
 
-proc parseFile(file: string): (Board, Path, FaceMap) =
+proc parseFile(file: string): (Board, Path, FaceMap, int) =
     var board = initTable[Coord, TileType]()
     var parts = lines(file).toSeq.splitByDelimiter(proc (l: string): bool = l == "").toSeq
     for rowIndex, line in parts[0]:
@@ -69,7 +71,7 @@ proc parseFile(file: string): (Board, Path, FaceMap) =
                         faceMap[cc] = nextFace
                 counts.inc(nextFace)
 
-    return (board, path, faceMap)
+    return (board, path, faceMap, side)
 
 proc changeDirection(d: Directions, how: int): Directions =
     if d == Directions.dUp:
@@ -84,20 +86,77 @@ proc changeDirection(d: Directions, how: int): Directions =
 proc isWall(b: Board, c: Coord): bool = b.contains(c) and b[c] == ttWall
 proc isOutside(b: Board, c: Coord): bool = not b.contains(c)
 
-proc wrap(b: Board, c: Coord, dir: Directions): Coord =
+proc wrap(b: Board, current: Coord, c: Coord, dir: Directions): (Coord, Directions) =
     assert isOutside(b, c)
+    var newCoord: Coord
     if dir == dRight:
         let minX = b.keys.toSeq.filterIt(it.y == c.y).mapIt(it.x).min()
-        return Coord(x: minX, y: c.y)
+        newCoord = Coord(x: minX, y: c.y)
     elif dir == dLeft:
         let maxX = b.keys.toSeq.filterIt(it.y == c.y).mapIt(it.x).max()
-        return Coord(x: maxX, y: c.y)
+        newCoord = Coord(x: maxX, y: c.y)
     elif dir == dDown:
         let minY = b.keys.toSeq.filterIt(it.x == c.x).mapIt(it.y).min()
-        return Coord(x: c.x, y: minY)
-    # dUp
-    let maxY = b.keys.toSeq.filterIt(it.x == c.x).mapIt(it.y).max()
-    return Coord(x: c.x, y: maxY)
+        newCoord = Coord(x: c.x, y: minY)
+    else:
+        # dUp
+        let maxY = b.keys.toSeq.filterIt(it.x == c.x).mapIt(it.y).max()
+        newCoord = Coord(x: c.x, y: maxY)
+    return (newCoord, dir)
+
+proc rotate90CW(origin: Coord, c: Coord): Coord =
+    let delta = origin - c
+    let rot = Coord(x: delta.y, y: -delta.x)
+    return origin + rot
+
+proc createWrap2(faceMap: FaceMap, side: int): WrapFn =
+
+    proc findOrigin(c: Coord): Coord =
+        let face = faceMap[c]
+        let faceCoords = faceMap.pairs.toSeq.filterIt(it[1] == face).mapIt(it[0])
+        let ox = faceCoords.mapIt(it.x).min()
+        let oy = faceCoords.mapIt(it.y).min()
+        return Coord(x: ox, y: oy)
+
+    return proc (b: Board, current: Coord, next: Coord, dir: Directions): (Coord, Directions) =
+        assert isOutside(b, next)
+
+        proc findNextFace(findDir: Directions): (bool, Coord, int) =
+            # add 'side' to 'current' and 'next'. If both exist, we have found the next face.
+            var steps = 0
+            while true:
+                steps += 1
+                let c2 = current.move(findDir, side)
+                let n2 = next.move(findDir, side)
+                if isOutside(b, c2):
+                    return (false, n2, steps)
+                if b.contains(n2):
+                    return (true, n2, steps)
+        proc rotateDir(steps: int, how: int): Directions =
+            var d = dir
+            for i in 1..steps:
+                d = changeDirection(d, how)
+            return d
+        proc rotateCoordCW(n: Coord, steps: int): Coord =
+            # origin is upper-left, 
+            let origin = findOrigin(n)
+            var c = n
+            for i in 1..steps:
+                # 90 degrees CW in relation to upper left means we're in the lower-right quadrant,
+                # and end up in the lower-left quadrant, so we must move to the right.
+                c = rotate90CW(origin, c) + Coord(x: side - 1, y: 0)
+            return c
+
+        if dir == Directions.dRight:
+            # TODO: Try both up and down
+            let (success, newCoord, steps) = findNextFace(Directions.dDown)
+            let newDirection = rotateDir(steps, Right)
+            let newCoordRot = rotateCoordCW(newCoord, steps)
+            return (newCoordRot, newDirection)
+
+
+        assert false, "TODO"
+        return (next, dir)
 
 proc facingValue(dir: Directions): int =
     return case dir
@@ -106,7 +165,7 @@ proc facingValue(dir: Directions): int =
         of Directions.dLeft: 2
         of Directions.dUp: 3
 
-proc move(b: Board, path: Path, wrapFn: proc (b: Board, c: Coord, dir: Directions): Coord): (Coord, Directions) =
+proc move(b: Board, path: Path, wrapFn: WrapFn): (Coord, Directions) =
     var current = findStart(b)
     var dir = Directions.dRight
     for instr in path:
@@ -117,7 +176,7 @@ proc move(b: Board, path: Path, wrapFn: proc (b: Board, c: Coord, dir: Direction
                 var next = move(current, dir)
                 if isOutside(b, next):
                     # wrap
-                    next = wrapFn(b, next, dir)
+                    (next, dir) = wrapFn(b, current, next, dir)
                 if isWall(b, next):
                     # stay
                     break
@@ -126,7 +185,7 @@ proc move(b: Board, path: Path, wrapFn: proc (b: Board, c: Coord, dir: Direction
     return (current, dir)
 
 proc part1(file: string): int =
-    let (board, path, _) = parseFile(file)
+    let (board, path, _, _) = parseFile(file)
     let (pos, dir) = move(board, path, wrap)
 
     let row = 1 + pos.y
@@ -149,7 +208,9 @@ suite "day 22":
         check(part1("input") == 64256)
 
     test "face map":
-        let (_, _, faceMap) = parseFile("example")
+        let (_, _, faceMap, side) = parseFile("example")
+
+        check(side == 4)
 
         let uniqueValues = faceMap.values.toSeq.toHashSet()
         check(uniqueValues.len() == 6)
@@ -160,3 +221,9 @@ suite "day 22":
         check(faceMap[Coord(x: 8, y: 4)] == 4)
         check(faceMap[Coord(x: 8, y: 8)] == 5)
         check(faceMap[Coord(x: 12, y: 8)] == 6)
+
+    test "wrap2":
+        let (board, _, faceMap, side) = parseFile("example")
+        let wrap2 = createWrap2(faceMap, side)
+
+        check(wrap2(board, Coord(x: 11, y: 5), Coord(x: 12, y: 5), Directions.dRight) == (Coord(x: 14, y: 8), Directions.dDown))
