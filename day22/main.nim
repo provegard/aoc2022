@@ -6,10 +6,12 @@ import tables
 import sets
 import math
 import strformat
+import strutils
 
 type
     TileType = enum ttOpen, ttWall
     Board = Table[Coord, TileType]
+    Board3D = Table[Coord3D, TileType]
     FaceMap = Table[Coord, int]
     Path = seq[int]
     WrapFn = proc (b: Board, current: Coord, next: Coord, dir: Directions): (Coord, Directions)
@@ -109,6 +111,128 @@ proc rotate90CW(origin: Coord, c: Coord): Coord =
     let rot = Coord(x: delta.y, y: -delta.x)
     return origin + rot
 
+proc rotate3D(refPoint: Coord3D, points: seq[Coord3D], pitchDeg, rollDeg, yawDeg: int): seq[Coord3D] =
+    proc toRad(n: int): float = float(n) * PI / 180.0
+    let yaw = toRad(yawDeg)
+    let pitch = toRad(pitchDeg)
+    let roll = toRad(rollDeg)
+
+    let cosa = cos(yaw)
+    let sina = sin(yaw)
+
+    let cosb = cos(pitch)
+    let sinb = sin(pitch)
+
+    let cosc = cos(roll)
+    let sinc = sin(roll)
+
+    let Axx = cosa * cosb
+    let Axy = cosa * sinb * sinc - sina * cosc
+    let Axz = cosa * sinb * cosc + sina * sinc
+
+    let Ayx = sina * cosb
+    let Ayy = sina * sinb * sinc + cosa * cosc
+    let Ayz = sina * sinb * cosc - cosa * sinc
+
+    let Azx = -sinb
+    let Azy = cosb * sinc
+    let Azz = cosb * cosc
+
+    return points.map(proc (p: Coord3D): Coord3D =
+        let px = float(p.x - refPoint.x)
+        let py = float(p.y - refPoint.y)
+        let pz = float(p.z - refPoint.z)
+
+        let px2 = Axx * px + Axy * py + Axz * pz
+        let py2 = Ayx * px + Ayy * py + Ayz * pz
+        let pz2 = Azx * px + Azy * py + Azz * pz
+
+        return Coord3D(
+            x: int(round(px2 + float(refPoint.x))),
+            y: int(round(py2 + float(refPoint.y))),
+            z: int(round(pz2 + float(refPoint.z)))
+        )
+    )
+
+let ndir = @[Directions.dUp, Directions.dRight, Directions.dDown, Directions.dLeft]
+iterator neighbors(c: Coord, predicate: proc (n: Coord): bool): Coord =
+    for dir in ndir:
+        let n = move(c, dir)
+        if predicate(n):
+            yield n
+
+proc connected(b: Board, c: Coord, predicate: proc (n: Coord): bool): HashSet[Coord] =
+    var s = initHashSet[Coord]()
+    if b.contains(c):
+        var q = newSeq[Coord]()
+        q.add(c)
+        while q.len() > 0:
+            let c2 = q.pop()
+            s.incl(c2)
+            let nn = neighbors(c2, proc (n: Coord): bool = predicate(n) and b.contains(n) and not s.contains(n)).toSeq
+            for n in nn:
+                q.add(n)
+    result = s
+
+
+proc fold(b: Board, faceMap: FaceMap): Board3D =
+    var foldedInRelationTo = initTable[int, int]()
+
+    var m2To3 = initTable[Coord, Coord3D]()
+    for c in b.keys.toSeq:
+        m2To3[c] = Coord3D(x: c.x, y: c.y, z: 0)
+
+    #var all = newSeq[(Coord3D, int)]()        
+    for i in 1..6:
+        let coordsForI = faceMap.pairs.toSeq.filterIt(it[1] == i).mapIt(it[0])
+        let minX = coordsForI.mapIt(it.x).min()
+        let minY = coordsForI.mapIt(it.y).min()
+        let maxX = coordsForI.mapIt(it.x).max()
+        let maxY = coordsForI.mapIt(it.y).max()
+        # let allLeft = b.keys.toSeq.filterIt(it.x < minX)
+        # let allRight = b.keys.toSeq.filterIt(it.x > maxX)
+        # let allDown = b.keys.toSeq.filterIt(it.y > maxY)
+        # let allUp = b.keys.toSeq.filterIt(it.y < minY)
+        let allLeft = connected(b, Coord(x: minX - 1, y: minY), proc (n: Coord): bool = n.x < minX).toSeq
+        let allRight = connected(b, Coord(x: maxX + 1, y: minY), proc (n: Coord): bool = n.x > maxX).toSeq
+        let allDown = connected(b, Coord(x: minX, y: maxY + 1), proc (n: Coord): bool = n.y > maxY).toSeq
+
+        # if allLeft.len() > 0:
+        #     let p3 = allLeft.mapIt(Coord3D(x: it.x, y: it.y, z: 0))
+        #     let refP = Coord3D(x: minX - 1, y: minY, z: 0)
+        #     let rot = rotate3D(refP, p3, 0, -90, 0)
+        #     for c in rot:
+        #         all.add(c)
+        # if allRight.len() > 0:
+        #     let p3 = allRight.mapIt(Coord3D(x: it.x, y: it.y, z: 0))
+        #     let refP = Coord3D(x: maxX + 1, y: minY, z: 0)
+        #     let rot = rotate3D(refP, p3, 0, 90, 0)
+        #     for c in rot:
+        #         all.add(c)
+        if allDown.len() > 0:
+            let p3 = allDown.mapIt(Coord3D(x: it.x, y: it.y, z: 0))
+            let refP = Coord3D(x: minX, y: maxY + 1, z: 0)
+            let rot = rotate3D(refP, p3, 0, -90, 0)
+            for idx, c in rot:
+                let orig = allDown[idx]
+                #let face = faceMap[orig]
+                #all.add((c, face))
+                m2To3[orig] = c
+
+        #for cc in coordsForI:
+        #    all.add((Coord3D(x: cc.x, y: cc.y, z: 0), i))
+
+
+        #break
+
+    let all = m2To3.pairs.toSeq.mapIt((it[1], faceMap[it[0]]))
+    let fc = all.mapIt(&"{it[0].x};{it[0].y};{it[0].z};{it[1]}").join("\n")
+    writeFile("coords.csv", fc)
+
+    result = initTable[Coord3D, TileType]()
+
+
+
 proc createWrap2(faceMap: FaceMap, side: int): WrapFn =
 
     proc findOrigin(c: Coord): Coord =
@@ -153,6 +277,7 @@ proc createWrap2(faceMap: FaceMap, side: int): WrapFn =
             let newDirection = rotateDir(steps, Right)
             let newCoordRot = rotateCoordCW(newCoord, steps)
             return (newCoordRot, newDirection)
+
 
 
         assert false, "TODO"
@@ -227,3 +352,9 @@ suite "day 22":
         let wrap2 = createWrap2(faceMap, side)
 
         check(wrap2(board, Coord(x: 11, y: 5), Coord(x: 12, y: 5), Directions.dRight) == (Coord(x: 14, y: 8), Directions.dDown))
+
+        check(wrap2(board, Coord(x: 10, y: 11), Coord(x: 10, y: 12), Directions.dDown) == (Coord(x: 1, y: 7), Directions.dUp))
+
+    test "fold":
+        let (board, _, faceMap, side) = parseFile("example")
+        discard fold(board, faceMap)
