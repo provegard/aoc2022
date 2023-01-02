@@ -205,6 +205,7 @@ proc fold(b: Board, faceMap: FaceMap): Board3D =
             let ref0 = Coord(x: minX, y: maxY)
             let ref0b = Coord(x: maxX, y: maxY)
             let lineDiff = m2To3[ref0b] - m2To3[ref0]
+            echo &"down, lineDiff = {lineDiff}"
 
             let ref1 = Coord(x: minX, y: maxY + 1)
             let ref2 = Coord(x: minX, y: maxY + 2)
@@ -212,12 +213,13 @@ proc fold(b: Board, faceMap: FaceMap): Board3D =
             let ref2Idx = findIndex(allDown, proc (c: Coord): bool = c == ref2)
 
             var rotated3D: seq[Coord3D]
-            if lineDiff.x == 0:
-                rotated3D = rotate3D(m2To3[ref1], beforeRotate3D, 0, 0, 90)
-            elif lineDiff.y == 0:
-                rotated3D = rotate3D(m2To3[ref1], beforeRotate3D, 0, -90, 0)
-            elif lineDiff.z == 0:
-                assert false, "TODO 2"
+            if lineDiff.x != 0:
+                rotated3D = rotate3D(m2To3[ref1], beforeRotate3D, 0, 90, 0)
+            elif lineDiff.y != 0:
+                #rotated3D = rotate3D(m2To3[ref1], beforeRotate3D, 0, -90, 0)
+                assert false, "TODO 1"
+            else:
+                rotated3D = rotate3D(m2To3[ref1], beforeRotate3D, 0, 0, -90)
                 #let rotated3D = rotate3D(m2To3[ref1], beforeRotate3D, 0, -90, 0)
 
             let diff = rotated3D[ref2Idx] - rotated3D[ref1Idx] # movement
@@ -233,6 +235,7 @@ proc fold(b: Board, faceMap: FaceMap): Board3D =
             let ref0 = Coord(x: minX, y: minY)
             let ref0b = Coord(x: minX, y: maxY)
             let lineDiff = m2To3[ref0b] - m2To3[ref0]
+            echo &"left, lineDiff = {lineDiff}"
 
             let ref1 = Coord(x: minX - 1, y: minY)
             let ref2 = Coord(x: minX - 2, y: minY)
@@ -243,12 +246,14 @@ proc fold(b: Board, faceMap: FaceMap): Board3D =
             #echo &"[left] xxx = {xxx}"
 
             var rotated3D: seq[Coord3D]
-            if lineDiff.y == 0:
-                rotated3D = rotate3D(m2To3[ref1], beforeRotate3D, 0, 0, 90)
-            elif lineDiff.z == 0:
+            if lineDiff.y != 0:
+                rotated3D = rotate3D(m2To3[ref1], beforeRotate3D, 90, 0, 0)
+            elif lineDiff.z != 0:
+                assert false, "TODO 4"
                 rotated3D = rotate3D(m2To3[ref1], beforeRotate3D, 90, 0, 0)
             else:
-                assert false, "TODO 3"
+                assert false, "TODO 5"
+                rotated3D = rotate3D(m2To3[ref1], beforeRotate3D, 0, 90, 0)
 
             let diff = rotated3D[ref2Idx] - rotated3D[ref1Idx] # movement
             for idx, c in rotated3D:
