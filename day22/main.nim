@@ -211,22 +211,22 @@ proc fold(b: Board, faceMap: FaceMap): Board3D =
         #     let rot = rotate3D(refP, p3, 0, 90, 0)
         #     for c in rot:
         #         all.add(c)
-        echo &"allDown len = {allDown.len()}"
         if allDown.len() > 0:
-            let p3 = allDown.mapIt(m2To3[it])
+            # find the 3D coordinate for each 2D coordinate
+            let beforeRotate3D = allDown.mapIt(m2To3[it])
+
+            # determine reference points for rotation and movement in 2D
             let refP2D = Coord(x: minX, y: maxY + 1)
             let refP2DBelow = Coord(x: minX, y: maxY + 2)
+            let refP2DIdx = findIndex(allDown, proc (c: Coord): bool = c == refP2D)
+            let refP2DBelowIdx = findIndex(allDown, proc (c: Coord): bool = c == refP2DBelow)
 
-            let rot = rotate3D(m2To3[refP2D], p3, 0, -90, 0)
-            for idx, c in rot:
-                let orig = allDown[idx]
-                m2To3[orig] = c
+            let rotated3D = rotate3D(m2To3[refP2D], beforeRotate3D, 0, -90, 0)
 
-            # also move one in the fold direction
-            let diff = m2To3[refP2DBelow] - m2To3[refP2D]
-            for idx, c in rot:
+            let diff = rotated3D[refP2DBelowIdx] - rotated3D[refP2DIdx] # movement
+            for idx, c in rotated3D:
                 let orig = allDown[idx]
-                m2To3[orig] = c + diff            
+                m2To3[orig] = c + diff
 
 
 
