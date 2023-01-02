@@ -28,9 +28,9 @@ ymin = min(ys)
 zmin = min(zs)
 
 for i in range(0, len(xs)):
-    xs[i] -= xmin
-    ys[i] -= ymin
-    zs[i] -= zmin
+    xs[i] -= xmin - 1
+    ys[i] -= ymin - 1
+    zs[i] -= zmin - 1
 
 xmax = max(xs)
 ymax = max(ys)
@@ -39,7 +39,7 @@ zmax = max(zs)
 
 #x, y, z = np.indices((xmax + 1, ymax + 1, zmax + 1))
 
-n_voxels = np.zeros((xmax + 1, ymax + 1, zmax + 1), dtype=bool)
+n_voxels = np.zeros((xmax + 2, ymax + 2, zmax + 2), dtype=bool)
 
 for i in range(0, len(xs)):
     n_voxels[xs[i], ys[i], zs[i]] = True
@@ -62,9 +62,9 @@ ax.set_xlabel('X')
 ax.set_ylabel('Y')
 ax.set_zlabel('Z')
 
-ax.set_xlim(xmin, xmax)
-ax.set_ylim(ymin, ymax)
-ax.set_zlim(zmin, zmax)
+ax.set_xlim(0, xmax + 2)
+ax.set_ylim(0, ymax + 2)
+ax.set_zlim(0, zmax + 2)
 
 ax.view_init(30, 30, 0, vertical_axis='y')
 
