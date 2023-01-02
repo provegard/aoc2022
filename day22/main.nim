@@ -178,9 +178,11 @@ proc connected(b: Board, c: Coord, predicate: proc (n: Coord): bool): HashSet[Co
 proc fold(b: Board, faceMap: FaceMap): Board3D =
     var foldedInRelationTo = initTable[int, int]()
 
+    proc to3D(c: Coord): Coord3D = Coord3D(x: c.x, y: c.y, z: 0)
+
     var m2To3 = initTable[Coord, Coord3D]()
     for c in b.keys.toSeq:
-        m2To3[c] = Coord3D(x: c.x, y: c.y, z: 0)
+        m2To3[c] = to3D(c)
 
     #var all = newSeq[(Coord3D, int)]()        
     for i in 1..6:
@@ -209,18 +211,23 @@ proc fold(b: Board, faceMap: FaceMap): Board3D =
         #     let rot = rotate3D(refP, p3, 0, 90, 0)
         #     for c in rot:
         #         all.add(c)
+        echo &"allDown len = {allDown.len()}"
         if allDown.len() > 0:
-            let p3 = allDown.mapIt(Coord3D(x: it.x, y: it.y, z: 0))
-            let refP = Coord3D(x: minX, y: maxY + 1, z: 0)
-            let rot = rotate3D(refP, p3, 0, -90, 0)
+            let p3 = allDown.mapIt(m2To3[it])
+            let refP2D = Coord(x: minX, y: maxY + 1)
+            let refP2DBelow = Coord(x: minX, y: maxY + 2)
+
+            let rot = rotate3D(m2To3[refP2D], p3, 0, -90, 0)
             for idx, c in rot:
                 let orig = allDown[idx]
-                #let face = faceMap[orig]
-                #all.add((c, face))
                 m2To3[orig] = c
 
-        #for cc in coordsForI:
-        #    all.add((Coord3D(x: cc.x, y: cc.y, z: 0), i))
+            # also move one in the fold direction
+            let diff = m2To3[refP2DBelow] - m2To3[refP2D]
+            for idx, c in rot:
+                let orig = allDown[idx]
+                m2To3[orig] = c + diff            
+
 
 
         #break
