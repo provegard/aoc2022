@@ -186,6 +186,7 @@ proc fold(b: Board, faceMap: FaceMap): Board3D =
 
     #var all = newSeq[(Coord3D, int)]()        
     for i in 1..6:
+        echo &"Face = {i}"
         let coordsForI = faceMap.pairs.toSeq.filterIt(it[1] == i).mapIt(it[0])
         let minX = coordsForI.mapIt(it.x).min()
         let minY = coordsForI.mapIt(it.y).min()
@@ -195,9 +196,14 @@ proc fold(b: Board, faceMap: FaceMap): Board3D =
         # let allRight = b.keys.toSeq.filterIt(it.x > maxX)
         # let allDown = b.keys.toSeq.filterIt(it.y > maxY)
         # let allUp = b.keys.toSeq.filterIt(it.y < minY)
+        
+        # never up
         let allLeft = connected(b, Coord(x: minX - 1, y: minY), proc (n: Coord): bool = n.x < minX).toSeq
-        let allRight = connected(b, Coord(x: maxX + 1, y: minY), proc (n: Coord): bool = n.x > maxX).toSeq
+        #let allRight = connected(b, Coord(x: maxX + 1, y: minY), proc (n: Coord): bool = n.x > maxX).toSeq
         let allDown = connected(b, Coord(x: minX, y: maxY + 1), proc (n: Coord): bool = n.y > maxY).toSeq
+
+        echo &"allDown = {allDown.len()}"
+        echo &"allLeft = {allLeft.len()}"
 
         # if allLeft.len() > 0:
         #     let p3 = allLeft.mapIt(Coord3D(x: it.x, y: it.y, z: 0))
@@ -224,13 +230,28 @@ proc fold(b: Board, faceMap: FaceMap): Board3D =
             let rotated3D = rotate3D(m2To3[refP2D], beforeRotate3D, 0, -90, 0)
 
             let diff = rotated3D[refP2DBelowIdx] - rotated3D[refP2DIdx] # movement
+            echo &"down-diff = {diff}"
             for idx, c in rotated3D:
                 let orig = allDown[idx]
                 m2To3[orig] = c + diff
 
+        if allLeft.len() > 0:
+            # find the 3D coordinate for each 2D coordinate
+            let beforeRotate3D = allLeft.mapIt(m2To3[it])
 
+            # determine reference points for rotation and movement in 2D
+            let refP2D = Coord(x: minX - 1, y: minY)
+            let refP2DBelow = Coord(x: minX - 2, y: minY)
+            let refP2DIdx = findIndex(allLeft, proc (c: Coord): bool = c == refP2D)
+            let refP2DBelowIdx = findIndex(allLeft, proc (c: Coord): bool = c == refP2DBelow)
 
-        #break
+            let rotated3D = rotate3D(m2To3[refP2D], beforeRotate3D, 0, 0, 90)
+
+            let diff = rotated3D[refP2DBelowIdx] - rotated3D[refP2DIdx] # movement
+            echo &"left-diff = {diff}"
+            for idx, c in rotated3D:
+                let orig = allLeft[idx]
+                m2To3[orig] = c + diff
 
     let all = m2To3.pairs.toSeq.mapIt((it[1], faceMap[it[0]]))
     let fc = all.mapIt(&"{it[0].x};{it[0].y};{it[0].z};{it[1]}").join("\n")
