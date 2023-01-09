@@ -1,3 +1,4 @@
+import strformat
 type
   Directions* = enum
     dUp, dRight, dLeft, dDown
@@ -35,3 +36,8 @@ proc `-`*(a, b: Coord): Coord = Coord(x: a.x - b.x, y: a.y - b.y)
 
 proc manhattan*(a, b: Coord3D): int =
     return abs(a.x - b.x) + abs(a.y - b.y) + abs(a.z - b.z)
+
+proc `+`*(a, b: Coord3D): Coord3D = Coord3D(x: a.x + b.x, y: a.y + b.y, z: a.z + b.z)
+proc `-`*(a, b: Coord3D): Coord3D = Coord3D(x: a.x - b.x, y: a.y - b.y, z: a.z - b.z)
+proc `$`*(c: Coord3D): string = &"Coord3D(x={c.x}, y={c.y}, z={c.z})"
+proc `$`*(c: Coord): string = &"Coord(x={c.x}, y={c.y})"
