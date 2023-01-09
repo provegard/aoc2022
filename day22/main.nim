@@ -214,7 +214,8 @@ proc fold(b: Board, faceMap: FaceMap): Board3D =
         echo &"calc_rot_left, n = {n}"
         if n.z != 0:
             # XY plane, rotate around the Y axis
-            return (-90, 0, 0)
+            #return (-90, 0, 0)
+            return (-90 * sgn(n.z), 0, 0)
         if n.x != 0:
             # YZ plane, rotate around the Y axis
             return (-90, 0, 0)
