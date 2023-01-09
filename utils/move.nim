@@ -41,3 +41,12 @@ proc `+`*(a, b: Coord3D): Coord3D = Coord3D(x: a.x + b.x, y: a.y + b.y, z: a.z +
 proc `-`*(a, b: Coord3D): Coord3D = Coord3D(x: a.x - b.x, y: a.y - b.y, z: a.z - b.z)
 proc `$`*(c: Coord3D): string = &"Coord3D(x={c.x}, y={c.y}, z={c.z})"
 proc `$`*(c: Coord): string = &"Coord(x={c.x}, y={c.y})"
+
+proc cross_product*(a, b: Coord3D): Coord3D =
+    # u=a1i+a2j+a3k
+    # v=b1i+b2j+b3k
+    # u×v=(a2b3−a3b2)i+(a3b1−a1b3)j+(a1b2−a2b1)k
+    let cx = a.y * b.z - a.z * b.y
+    let cy = a.z * b.x - a.x * b.z
+    let cz = a.x * b.y - a.y * b.x
+    result = Coord3D(x: cx, y: cy, z: cz)
