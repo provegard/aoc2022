@@ -218,20 +218,20 @@ proc fold(b: Board, faceMap: FaceMap): Board3D =
             return (-90 * sgn(n.z), 0, 0)
         if n.x != 0:
             # YZ plane, rotate around the Y axis
-            return (-90, 0, 0)
+            return (-90 * sgn(n.x), 0, 0)
         # XZ plane, rotate around the Z axis
-        return (0, 0, 90)
+        return (0, 0, 90 * sgn(n.y))
 
     proc calc_rot_down(n: Coord3D): (int, int, int) =
         echo &"calc_rot_down, n = {n}"
         if n.z != 0:
             # XY plane, rotate around the X axis
-            return (0, -90, 0)
+            return (0, -90 * sgn(n.z), 0)
         if n.x != 0:
             # YZ plane, rotate around the Z axis
-            return (0, 0, 90)
+            return (0, 0, 90 * sgn(n.x))
         # XZ plane, rotate around the X axis
-        return (0, -90, 0)
+        return (0, -90 * sgn(n.y), 0)
 
     #var all = newSeq[(Coord3D, int)]()        
     for i in 1..6:
@@ -465,7 +465,7 @@ suite "day 22":
     #     check(wrap2(board, Coord(x: 10, y: 11), Coord(x: 10, y: 12), Directions.dDown) == (Coord(x: 1, y: 7), Directions.dUp))
 
     test "fold":
-        let (board, _, faceMap, side) = parseFile("example")
+        let (board, _, faceMap, side) = parseFile("example2")
         discard fold(board, faceMap)
 
     test "cross_product":
