@@ -211,16 +211,18 @@ proc fold(b: Board, faceMap: FaceMap): Board3D =
         return (0, 0, 0)
 
     proc calc_rot_left(n: Coord3D): (int, int, int) =
+        echo &"calc_rot_left, n = {n}"
         if n.z != 0:
             # XY plane, rotate around the Y axis
-            return (90, 0, 0)
+            return (-90, 0, 0)
         if n.x != 0:
             # YZ plane, rotate around the Y axis
             return (-90, 0, 0)
         # XZ plane, rotate around the Z axis
-        return (0, 0, -90)
+        return (0, 0, 90)
 
     proc calc_rot_down(n: Coord3D): (int, int, int) =
+        echo &"calc_rot_down, n = {n}"
         if n.z != 0:
             # XY plane, rotate around the X axis
             return (0, -90, 0)
@@ -228,7 +230,7 @@ proc fold(b: Board, faceMap: FaceMap): Board3D =
             # YZ plane, rotate around the Z axis
             return (0, 0, 90)
         # XZ plane, rotate around the X axis
-        return (0, 90, 0)
+        return (0, -90, 0)
 
     #var all = newSeq[(Coord3D, int)]()        
     for i in 1..6:
@@ -243,7 +245,7 @@ proc fold(b: Board, faceMap: FaceMap): Board3D =
 
         let norm = calc_normal(i)
         echo &"face {i}, normal = {norm}"
-        echo &"- left = {allLeft.len()}, down = {allDown.len()}"
+        #echo &"- left = {allLeft.len()}, down = {allDown.len()}"
 
         if allLeft.len() > 0:
             let faceLeft = faceMap[Coord(x: minX - 1, y: minY)]
