@@ -218,121 +218,99 @@ proc fold(b: Board, faceMap: FaceMap): Board3D =
             return (-90 * sgn(n.z), 0, 0)
         if n.x != 0:
             # YZ plane, rotate around the Y axis
-            return (-90 * sgn(n.x), 0, 0)
+            # return (-90 * sgn(n.x), 0, 0)
+            return (-90, 0, 0)
         # XZ plane, rotate around the Z axis
-        return (0, 0, 90 * sgn(n.y))
+        # return (0, 0, 90 * sgn(n.y))
+        return (0, 0, 90)
+
 
     proc calc_rot_down(n: Coord3D): (int, int, int) =
         echo &"calc_rot_down, n = {n}"
         if n.z != 0:
             # XY plane, rotate around the X axis
-            return (0, -90 * sgn(n.z), 0)
+            return (0, -90, 0)
+            # return (0, -90 * sgn(n.z), 0)
         if n.x != 0:
             # YZ plane, rotate around the Z axis
-            return (0, 0, 90 * sgn(n.x))
+            assert false, "TODO"
+            return (0, 0, 90)
+            # return (0, 0, 90 * sgn(n.x))
         # XZ plane, rotate around the X axis
-        return (0, -90 * sgn(n.y), 0)
+        return (0, -90, 0)
+        # return (0, -90 * sgn(n.y), 0)
 
-    #var all = newSeq[(Coord3D, int)]()        
-    for i in 1..6:
-        let coordsForI = faceMap.pairs.toSeq.filterIt(it[1] == i).mapIt(it[0])
-        let minX = coordsForI.mapIt(it.x).min()
-        let minY = coordsForI.mapIt(it.y).min()
-        let maxX = coordsForI.mapIt(it.x).max()
-        let maxY = coordsForI.mapIt(it.y).max()
-        
-        let allLeft = connected(b, Coord(x: minX - 1, y: minY), proc (n: Coord): bool = n.x < minX).toSeq
-        let allDown = connected(b, Coord(x: minX, y: maxY + 1), proc (n: Coord): bool = n.y > maxY).toSeq
+    for down in @[true, false]:
+        for i in 1..6:
+            let coordsForI = faceMap.pairs.toSeq.filterIt(it[1] == i).mapIt(it[0])
+            let minX = coordsForI.mapIt(it.x).min()
+            let minY = coordsForI.mapIt(it.y).min()
+            let maxX = coordsForI.mapIt(it.x).max()
+            let maxY = coordsForI.mapIt(it.y).max()
+            
+            let allLeft = connected(b, Coord(x: minX - 1, y: minY), proc (n: Coord): bool = n.x < minX).toSeq
+            let allDown = connected(b, Coord(x: minX, y: maxY + 1), proc (n: Coord): bool = n.y > maxY).toSeq
 
-        let norm = calc_normal(i)
-        echo &"face {i}, normal = {norm}"
-        #echo &"- left = {allLeft.len()}, down = {allDown.len()}"
+            let norm = calc_normal(i)
+            #echo &"face {i}, normal = {norm}"
+            #echo &"- left = {allLeft.len()}, down = {allDown.len()}"
 
-        if allLeft.len() > 0:
-            let faceLeft = faceMap[Coord(x: minX - 1, y: minY)]
-            let leftNorm = calc_normal(faceLeft)
-            if leftNorm == norm:
-                # fold
-                let (pitch, roll, yaw) = calc_rot_left(norm)
+            if not down and allLeft.len() > 0:
+                let faceLeft = faceMap[Coord(x: minX - 1, y: minY)]
+                let leftNorm = calc_normal(faceLeft)
+                if leftNorm == norm:
+                    # fold
+                    #let (pitch, roll, yaw) = calc_rot_left(norm)
+                    var pitch = 0
+                    var roll = 0
+                    var yaw = 0
+                    if norm.y != 0:
+                        echo &"norm = {norm}"
+                        yaw = 90
+                    else:
+                        pitch = if norm.z != 0: -90 else: 90
+                    # let roll = 0
+                    # let yaw = 0
 
-                # determine reference points for rotation and movement in 2D
-                # let ref0 = Coord(x: minX, y: minY)
-                # let ref0b = Coord(x: minX, y: maxY)
-                # let lineDiff = m2To3[ref0b] - m2To3[ref0]
-                # echo &"left, lineDiff = {lineDiff}"
+                    # find the 3D coordinate for each 2D coordinate
+                    let beforeRotate3D = allLeft.mapIt(m2To3[it])
 
-                # find the 3D coordinate for each 2D coordinate
-                let beforeRotate3D = allLeft.mapIt(m2To3[it])
+                    let ref1 = Coord(x: minX - 1, y: minY)
+                    let ref2 = Coord(x: minX - 2, y: minY)
+                    let ref1Idx = findIndex(allLeft, proc (c: Coord): bool = c == ref1)
+                    let ref2Idx = findIndex(allLeft, proc (c: Coord): bool = c == ref2)
 
-                let ref1 = Coord(x: minX - 1, y: minY)
-                let ref2 = Coord(x: minX - 2, y: minY)
-                let ref1Idx = findIndex(allLeft, proc (c: Coord): bool = c == ref1)
-                let ref2Idx = findIndex(allLeft, proc (c: Coord): bool = c == ref2)
+                    let rotated3D = rotate3D(m2To3[ref1], beforeRotate3D, pitch, roll, yaw)
 
-                let rotated3D = rotate3D(m2To3[ref1], beforeRotate3D, pitch, roll, yaw)
+                    let diff = rotated3D[ref2Idx] - rotated3D[ref1Idx] # movement
+                    for idx, c in rotated3D:
+                        let orig = allLeft[idx]
+                        m2To3[orig] = c + diff
 
-                let diff = rotated3D[ref2Idx] - rotated3D[ref1Idx] # movement
-                for idx, c in rotated3D:
-                    let orig = allLeft[idx]
-                    m2To3[orig] = c + diff
+            if down and allDown.len() > 0:
+                let faceDown = faceMap[Coord(x: minX, y: maxY + 1)]
+                let downNorm = calc_normal(faceDown)
+                if downNorm == norm:
+                    # fold
+                    #let (pitch, roll, yaw) = calc_rot_down(norm)
+                    let pitch = 0
+                    let roll = -90
+                    let yaw = 0
 
-        if allDown.len() > 0:
-            let faceDown = faceMap[Coord(x: minX, y: maxY + 1)]
-            let downNorm = calc_normal(faceDown)
-            if downNorm == norm:
-                # fold
-                let (pitch, roll, yaw) = calc_rot_down(norm)
+                    # find the 3D coordinate for each 2D coordinate
+                    let beforeRotate3D = allDown.mapIt(m2To3[it])
 
-                # find the 3D coordinate for each 2D coordinate
-                let beforeRotate3D = allDown.mapIt(m2To3[it])
+                    let ref1 = Coord(x: minX, y: maxY + 1)
+                    let ref2 = Coord(x: minX, y: maxY + 2)
+                    let ref1Idx = findIndex(allDown, proc (c: Coord): bool = c == ref1)
+                    let ref2Idx = findIndex(allDown, proc (c: Coord): bool = c == ref2)
 
-                let ref1 = Coord(x: minX, y: maxY + 1)
-                let ref2 = Coord(x: minX, y: maxY + 2)
-                let ref1Idx = findIndex(allDown, proc (c: Coord): bool = c == ref1)
-                let ref2Idx = findIndex(allDown, proc (c: Coord): bool = c == ref2)
+                    let rotated3D = rotate3D(m2To3[ref1], beforeRotate3D, pitch, roll, yaw)
 
-                let rotated3D = rotate3D(m2To3[ref1], beforeRotate3D, pitch, roll, yaw)
-
-                let diff = rotated3D[ref2Idx] - rotated3D[ref1Idx] # movement
-                for idx, c in rotated3D:
-                    let orig = allDown[idx]
-                    m2To3[orig] = c + diff
-
-        # if allLeft.len() > 0:
-        #     # find the 3D coordinate for each 2D coordinate
-        #     let beforeRotate3D = allLeft.mapIt(m2To3[it])
-
-        #     # determine reference points for rotation and movement in 2D
-        #     let ref0 = Coord(x: minX, y: minY)
-        #     let ref0b = Coord(x: minX, y: maxY)
-        #     let lineDiff = m2To3[ref0b] - m2To3[ref0]
-        #     echo &"left, lineDiff = {lineDiff}"
-
-        #     let ref1 = Coord(x: minX - 1, y: minY)
-        #     let ref2 = Coord(x: minX - 2, y: minY)
-        #     let ref1Idx = findIndex(allLeft, proc (c: Coord): bool = c == ref1)
-        #     let ref2Idx = findIndex(allLeft, proc (c: Coord): bool = c == ref2)
-
-        #     #let faceDiffBefore = m2To3[ref1] - m2To3[ref0]
-        #     #echo &"[left] xxx = {xxx}"
-
-        #     var rotated3D: seq[Coord3D]
-        #     if lineDiff.y != 0:
-        #         rotated3D = rotate3D(m2To3[ref1], beforeRotate3D, 90, 0, 0)
-        #     elif lineDiff.z != 0:
-        #         assert false, "TODO 4"
-        #         rotated3D = rotate3D(m2To3[ref1], beforeRotate3D, 90, 0, 0)
-        #     else:
-        #         assert false, "TODO 5"
-        #         rotated3D = rotate3D(m2To3[ref1], beforeRotate3D, 0, 90, 0)
-
-        #     let diff = rotated3D[ref2Idx] - rotated3D[ref1Idx] # movement
-        #     for idx, c in rotated3D:
-        #         let orig = allLeft[idx]
-        #         m2To3[orig] = c + diff
-
-        # #if i == 4:
-        # #    break
+                    let diff = rotated3D[ref2Idx] - rotated3D[ref1Idx] # movement
+                    for idx, c in rotated3D:
+                        let orig = allDown[idx]
+                        m2To3[orig] = c + diff
 
     let all = m2To3.pairs.toSeq.mapIt((it[1], faceMap[it[0]]))
     let fc = all.mapIt(&"{it[0].x};{it[0].y};{it[0].z};{it[1]}").join("\n")
@@ -465,7 +443,7 @@ suite "day 22":
     #     check(wrap2(board, Coord(x: 10, y: 11), Coord(x: 10, y: 12), Directions.dDown) == (Coord(x: 1, y: 7), Directions.dUp))
 
     test "fold":
-        let (board, _, faceMap, side) = parseFile("example2")
+        let (board, _, faceMap, side) = parseFile("example")
         discard fold(board, faceMap)
 
     test "cross_product":
